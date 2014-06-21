@@ -52,15 +52,20 @@ ggplot(mtcars, aes(x=am, y=mpg)) +
 We see that there is a definite separation between the means of the manual and automatic cars. However, our model does not do a good job of separating our values; the R squared
 is only 0.338.
 
-We will use R squared to determine which predictor to add next. The 
+To account for that unexplained variance, we will add predictors in a stepwise fashion. 
+This involves fitting a new model adding each column one at a time, and comparing the R squared for each new model.
+
 ```{r}
+# From the list of columns, remove the two already in the model
 variablesLeft <- setdiff(names(mtcars), c("mpg", "am"))
 
+# Insert each column into the regression model and determine the fit.
 models1 <- lapply(variablesLeft, FUN=function(x) {
     form <- paste0("mpg ~ am + ", x)
     lm(form, data=mtcars)
 })
 
+# Display the column names next to the R squared from each model
 cbind(variablesLeft, adj.r.squared=sapply(models1, FUN=function(x) summary(x)$adj.r.squared))
 
 summary(models1[[3]])
@@ -68,7 +73,7 @@ summary(models1[[3]])
 ggplot(mtcars, aes(x=hp, y=mpg, color=as.factor(am))) +
     geom_point()
 ```
-# Here, we find that HP is the best independent covariate. Let's find one more:
+We find that the model evaluating horsepower has the highest R squared statistic. We repeat the process to find the second predictor to add to the model.
 
 ```{r}
 variablesLeft <- setdiff(variablesLeft, "hp")
@@ -78,12 +83,7 @@ models2 <- lapply(variablesLeft, FUN=function(x) {
 })
 
 cbind(variablesLeft, adj.r.squared=sapply(models2, FUN=function(x) summary(x)$adj.r.squared))
-```
 
-
-
-# And our winner is weight; let's take a look at the fit now.
-```{r}
 summary(models2[[4]])
 
 ggplot(mtcars, aes(x=hp, y=mpg, color=as.factor(am))) +
@@ -91,4 +91,7 @@ ggplot(mtcars, aes(x=hp, y=mpg, color=as.factor(am))) +
 
 plot(models2[[4]])
 ```
+We find that weight explains the most variance in the rest of the data.
+Holding these two covariates constant, we find that the difference between manual and automatic transmission fuel economy is no longer significant.
 
+The major drawback to this analysis is that by ignoring interaction terms, we reduce the power of the analysis in order to make the interpretation of th emodel easier. As such, our conclusion of a lack of relation between mpg and transmission type must be taken cautiously. A study with a larger sample size may yield better results.
