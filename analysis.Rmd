@@ -1,26 +1,24 @@
+---
+output:
+  pdf_document
+---
 The Effect of Transmission on Fuel Economy
 ==========================================
 
-The purpose of this analysis is to quantify the relationship between vehicle
-transmission and fuel economy, measured in miles per gallon (mpg). The data 
-we use is taken from the `mtcars` dataset included in the R programming language
-. This data is taken from the 1974 Motor Trend magazine, and details 11 aspects
-of motor vehicle design and performance, including:
-
-1. Fuel economy (in miles per gallon)
-2. Number of cylinders
-3. Engine displacement (in cubic inches)
-4. Horsepower
-5. Rear axle ratio
-6. Weight (in thousands of pounds)
-7. Quarter mile time (in seconds)
-8. Cylinder arrangement (either V or straight)
-9. Transmission (either automatic or manual)
-10. Number of forward gears
-11. Number of carburetors
+The purpose of this analysis is to quantify the relationship between
+vehicle transmission and fuel economy, measured in miles per gallon
+(mpg). The data we use is taken from the `mtcars` dataset included in
+the R programming language . This data is taken from the 1974 Motor
+Trend magazine, and details 11 aspects of motor vehicle design and
+performance, including: , Fuel economy (in miles per gallon), Number
+of cylinders, Engine displacement (in cubic inches), Horsepower, Rear
+axle ratio, Weight (in thousands of pounds), Quarter mile time (in
+seconds), Cylinder arrangement (either V or straight), Transmission
+(either automatic or manual), Number of forward gears and Number of
+carburetors
 
 First, we load the `ggplot2` graphics library and the `mtcars` dataset.
-```{r}
+```{r fig.scap="figure 1"}
 library(ggplot2)
 data(mtcars)
 ```
@@ -69,9 +67,6 @@ models1 <- lapply(variablesLeft, FUN=function(x) {
 cbind(variablesLeft, adj.r.squared=sapply(models1, FUN=function(x) summary(x)$adj.r.squared))
 
 summary(models1[[3]])
-
-ggplot(mtcars, aes(x=hp, y=mpg, color=as.factor(am))) +
-    geom_point()
 ```
 We find that the model evaluating horsepower has the highest R squared statistic. We repeat the process to find the second predictor to add to the model.
 
@@ -88,8 +83,6 @@ summary(models2[[4]])
 
 ggplot(mtcars, aes(x=hp, y=mpg, color=as.factor(am))) +
     geom_point(aes(size=wt))
-
-plot(models2[[4]])
 ```
 We find that weight explains the most variance in the rest of the data.
 Holding these two covariates constant, we find that the difference between manual and automatic transmission fuel economy is no longer significant.
