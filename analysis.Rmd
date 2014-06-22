@@ -1,37 +1,35 @@
 ---
 output:
-  pdf_document
+  pdf_document:
+    keep_tex: yes
 ---
 The Effect of Transmission on Fuel Economy
 ==========================================
-
+## Executive Summary
 The purpose of this analysis is to quantify the relationship between
 vehicle transmission and fuel economy, measured in miles per gallon
 (mpg). The data we use is taken from the `mtcars` dataset included in
 the R programming language . This data is taken from the 1974 Motor
 Trend magazine, and details 11 aspects of motor vehicle design and
-performance. 
+performance. We find that on average, cars with manual transmissions
+are more fuel efficient than those with automatic transmissions by 2.08
+miles per gallon. This effect, however, is not statistically significant after
+adjusting for variations in weight and horsepower.
 
-First, we load the `ggplot2` graphics library and the `mtcars`
-data. Next, we create a matrix plot of the columns of mtcars to see
-what relationships there are between the variables. We also create a boxplot comparing mpg between automatic and manual transmission cars.
+## Analysis
+This analysis requires the `ggplot2` and `GGally` graphics packages, and the `mtcars` dataset. In Figure 1, we create a matrix plot of the columns of mtcars to see
+what relationships there are between the variables. Figure 2 is a boxplot comparing fuel economy between automatic and manual transmission cars.
 
-```{r}
+```{r echo=FALSE}
 library(ggplot2)
+library(GGally)
 data(mtcars)
-plot(mtcars) 
+```
 
-ggplot2(mtcars, aes(x=am, y=mpg)) + geom_boxplot()
-``` 
-
-We find that there is a slight difference in fuel economy between
-manual and automatic transmissions. We also see that there is a fair
-amount of covariation in the columns. This can be problematic for
+We find many relationships between various columms. This can be problematic for
 linear regression; omitting interaction terms can make models less
 accurate, but including these terms makes models much harder to
-interpret.
-
-We will fit a linear model in a stepwise fashion without interaction
+interpret. We will fit a linear model in a stepwise fashion without interaction
 terms, starting with transmission type. To limit the effect of the
 corelation between variables, we will limit our model to 3 predictors.
 
@@ -39,7 +37,7 @@ First, we create the one-predictor model based on transmission type.
 
 ```{r}
 mpg_am <- lm(mpg ~ am, data=mtcars)
-summary(mpg_am)
+summary(mpg_am)[c("coefficients","r.squared")]
 ```
 
 As expected, our model does not do a great job of explaining the
@@ -53,10 +51,11 @@ models1 <- lapply(variablesLeft, FUN=function(x) {
     form <- paste0("mpg ~ am + ", x)
     lm(form, data=mtcars)
 })
-
-cbind(variablesLeft, adj.r.squared=sapply(models1, FUN=function(x) summary(x)$adj.r.squared))
-
-summary(models1[[3]])
+results <- cbind(column=variablesLeft, 
+                 adj.r.squared=sapply(models1, 
+                                      FUN=function(x) summary(x)$adj.r.squared))
+results[order(results[,2], decreasing=TRUE)[1],]
+summary(models1[[3]])[c("coefficients","r.squared")]
 ```
 
 We find that the model evaluating horsepower has the highest R squared
@@ -70,22 +69,55 @@ models2 <- lapply(variablesLeft, FUN=function(x) {
     lm(form, data=mtcars)
 })
 
-cbind(variablesLeft, adj.r.squared=sapply(models2, FUN=function(x) summary(x)$adj.r.squared))
-
-summary(models2[[4]])
-
-ggplot(mtcars, aes(x=hp, y=mpg, color=as.factor(am))) +
-    geom_point(aes(size=wt)) 
+results <- cbind(column=variablesLeft, 
+                 adj.r.squared=sapply(models2, 
+                                      FUN=function(x) summary(x)$adj.r.squared))
+results[order(results[,2], decreasing=TRUE)[1],]
+summary(models2[[4]])[c("coefficients","r.squared")]
+ 
 ``` 
 
 We find that weight explains the most variance in the rest of the
 data.  Holding these two covariates constant, we find that the
 difference between manual and automatic transmission fuel economy is
-no longer significant.
+2.08, but is not significant. Looking at the Residuals plot in Figure 4, we see that there is a distinct U shape in the plot; this is not unexpected, as we intentionally disregarded the effect of interactions between the variables and limited the number of predictors in the model. Incorporating interaction terms would likely improve the fit of the model and reduce the pattern in this residuals plot.
 
-The major drawback to this analysis is that by ignoring interaction
-terms, we reduce the power of the analysis in order to make the
-interpretation of th emodel easier. As such, our conclusion of a lack
+The major weakness of this analysis is that by ignoring interaction
+terms, we sacrifice power in order to make the
+interpretation of the model easier. As such, our conclusion of a lack
 of relation between mpg and transmission type must be taken
-cautiously. A study with a larger sample size may yield better
+cautiously. A study with a larger sample size that considers the interaction between the variables may yield better
 results.
+
+## Appendix: Figures
+```{r Figures, echo=FALSE, cache=TRUE}
+# Figure 1: Matrix plot
+ggpairs(mtcars, 
+        title="Figure 1: Matrix plot of mtcars", 
+        upper= list(continuous="smooth", combo="box", discrete="ratio"), 
+        lower=list(continuous="smooth", combo="box", discrete = "ratio"), 
+        axisLabels="none", 
+        params=c(alpha=0.3))
+# Figure 2: Box plot
+ggplot(mtcars, aes(x=factor(am, labels=c("auto", "manual")), y=mpg)) + 
+  geom_boxplot() +
+  labs(x="Transmission", 
+       y="Fuel Economy (mpg)", 
+       title="Figure 2: Fuel Economy vs. Transmission")
+# Figure 3: Fuel Economy vs. Horsepower
+ggplot(mtcars, aes(x=hp, y=mpg, color=as.factor(am))) +
+  geom_point(aes(size=wt)) +
+  labs(x = "Horsepower",
+       y = "Fuel Economy (mpg)",
+       title = "Figure 3: Fuel Economy vs. Horsepower")
+# Figure 4: Residuals plot of final model
+mod2 <- fortify(models2[[4]])
+ggplot(mod2, aes(.fitted, .resid)) + 
+  geom_hline(y_intercept = 0) + 
+  geom_point() + 
+  geom_smooth(se=FALSE, method="loess") +
+  labs(x = "Fitted values",
+       y = "Residuals",
+       title = "Figure 4: Residuals versus Fitted Values")
+
+``` 
