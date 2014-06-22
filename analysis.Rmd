@@ -10,65 +10,58 @@ vehicle transmission and fuel economy, measured in miles per gallon
 (mpg). The data we use is taken from the `mtcars` dataset included in
 the R programming language . This data is taken from the 1974 Motor
 Trend magazine, and details 11 aspects of motor vehicle design and
-performance, including: , Fuel economy (in miles per gallon), Number
-of cylinders, Engine displacement (in cubic inches), Horsepower, Rear
-axle ratio, Weight (in thousands of pounds), Quarter mile time (in
-seconds), Cylinder arrangement (either V or straight), Transmission
-(either automatic or manual), Number of forward gears and Number of
-carburetors
+performance. 
 
-First, we load the `ggplot2` graphics library and the `mtcars` dataset.
-```{r fig.scap="figure 1"}
+First, we load the `ggplot2` graphics library and the `mtcars`
+data. Next, we create a matrix plot of the columns of mtcars to see
+what relationships there are between the variables. We also create a boxplot comparing mpg between automatic and manual transmission cars.
+
+```{r}
 library(ggplot2)
 data(mtcars)
-```
+plot(mtcars) 
 
-Next, we examine the pairwise relationship between the variables.
-```{r}
-plot(mtcars)
-```
-We find that there is a slight difference in fuel economy between manual and
-automatic transmissions. We also see that there is a fair amount of covariation
-in the columns. This can be problematic for linear regression, as omitting
-interaction terms can make models less accurate, but including these terms makes
-linear models much harder to interpret.
+ggplot2(mtcars, aes(x=am, y=mpg)) + geom_boxplot()
+``` 
 
-We will fit a linear model in a stepwise fashion, starting with transmission
-type. To maintain the interpretability of our model, we will not include
-interaction terms. To limit the effect of the corelation between variables, we 
-will limit our model to 3 predictors.
+We find that there is a slight difference in fuel economy between
+manual and automatic transmissions. We also see that there is a fair
+amount of covariation in the columns. This can be problematic for
+linear regression; omitting interaction terms can make models less
+accurate, but including these terms makes models much harder to
+interpret.
 
-First, we create a one-predictor model based on transmission type.
+We will fit a linear model in a stepwise fashion without interaction
+terms, starting with transmission type. To limit the effect of the
+corelation between variables, we will limit our model to 3 predictors.
+
+First, we create the one-predictor model based on transmission type.
+
 ```{r}
 mpg_am <- lm(mpg ~ am, data=mtcars)
 summary(mpg_am)
-
-ggplot(mtcars, aes(x=am, y=mpg)) +
-    geom_point() +
-    geom_abline(intercept=17, slope=7.2)
 ```
-We see that there is a definite separation between the means of the manual and automatic cars. However, our model does not do a good job of separating our values; the R squared
-is only 0.338.
 
-To account for that unexplained variance, we will add predictors in a stepwise fashion. 
-This involves fitting a new model adding each column one at a time, and comparing the R squared for each new model.
+As expected, our model does not do a great job of explaining the
+variance in the data set; the R squared is only 0.338.
+
+The next predictor  we add is the one which improves the R squared statistic the most; to find this predictor, we caclulate the linear regression for each remaining column and compare the R squared.
 
 ```{r}
-# From the list of columns, remove the two already in the model
 variablesLeft <- setdiff(names(mtcars), c("mpg", "am"))
-
-# Insert each column into the regression model and determine the fit.
 models1 <- lapply(variablesLeft, FUN=function(x) {
     form <- paste0("mpg ~ am + ", x)
     lm(form, data=mtcars)
 })
 
-# Display the column names next to the R squared from each model
 cbind(variablesLeft, adj.r.squared=sapply(models1, FUN=function(x) summary(x)$adj.r.squared))
 
 summary(models1[[3]])
 ```
-We find that the model evaluating horsepower has the highest R squared statistic. We repeat the process to find the second predictor to add to the model.
+
+We find that the model evaluating horsepower has the highest R squared
+statistic. We repeat the process to find our last predictor to add
+to the model.
 
 ```{r}
 variablesLeft <- setdiff(variablesLeft, "hp")
@@ -82,9 +75,17 @@ cbind(variablesLeft, adj.r.squared=sapply(models2, FUN=function(x) summary(x)$ad
 summary(models2[[4]])
 
 ggplot(mtcars, aes(x=hp, y=mpg, color=as.factor(am))) +
-    geom_point(aes(size=wt))
-```
-We find that weight explains the most variance in the rest of the data.
-Holding these two covariates constant, we find that the difference between manual and automatic transmission fuel economy is no longer significant.
+    geom_point(aes(size=wt)) 
+``` 
 
-The major drawback to this analysis is that by ignoring interaction terms, we reduce the power of the analysis in order to make the interpretation of th emodel easier. As such, our conclusion of a lack of relation between mpg and transmission type must be taken cautiously. A study with a larger sample size may yield better results.
+We find that weight explains the most variance in the rest of the
+data.  Holding these two covariates constant, we find that the
+difference between manual and automatic transmission fuel economy is
+no longer significant.
+
+The major drawback to this analysis is that by ignoring interaction
+terms, we reduce the power of the analysis in order to make the
+interpretation of th emodel easier. As such, our conclusion of a lack
+of relation between mpg and transmission type must be taken
+cautiously. A study with a larger sample size may yield better
+results.
